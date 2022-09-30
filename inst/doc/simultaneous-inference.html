@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Joshua French" />
+
+<meta name="date" content="2022-09-23" />
+
+<title>Simultaneous Inference</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Simultaneous Inference</h1>
+<h4 class="author">Joshua French</h4>
+<h4 class="date">2022-09-23</h4>
+
+
+
+<p>The <strong>api2lm</strong> package makes it easier to perform
+simultaneous inference for confidence intervals of regression
+coefficients and the response mean, as well as the prediction intervals
+for a new response.</p>
+<p>Let’s fit a basic basic linear model using the <code>mtcars</code>
+available in the <strong>datasets</strong> package. We consider the
+model fit in the <code>confint.lm</code> function.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="dv">100</span><span class="sc">/</span>mpg <span class="sc">~</span> disp <span class="sc">+</span> hp <span class="sc">+</span> wt <span class="sc">+</span> am, <span class="at">data =</span> mtcars)</span></code></pre></div>
+<div id="confidence-for-regression-coefficients" class="section level1">
+<h1>Confidence for regression coefficients</h1>
+<p>We construct typical <span class="math inline">\(t\)</span>-based
+confidence intervals using the <code>confint</code> function, as shown
+below. We use the default individual confidence level of 0.95.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(fit)</span></code></pre></div>
+<pre><code>##                    2.5 %      97.5 %
+## (Intercept) -0.774822875 2.256118188
+## disp        -0.002867999 0.008273849
+## hp          -0.001400580 0.011949674
+## wt           0.380088737 1.622517536
+## am          -0.614677730 0.926307310</code></pre>
+<p>The family-wise confidence level is guaranteed to be at least <span class="math inline">\(1-5(0.05)\geq 0.75\)</span> based on Boole’s
+inequality. We can use the Bonferroni correction or the
+Working-Hotelling procedure (the latter applies to all linear
+combinations of the regression coefficients) to control the family-wise
+confidence level. These adjusted intervals are available using the
+<code>confint_adjust</code> function in the <strong>api2lm</strong>
+package. By default, the function makes no adjustments, but indicates
+the lower bound of the family-wise confidence level.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(api2lm)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">confint_adjust</span>(fit)</span></code></pre></div>
+<pre><code>## 
+## Unadjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.75 
+## 
+##         term          lwr         upr
+##  (Intercept) -0.774822875 2.256118188
+##         disp -0.002867999 0.008273849
+##           hp -0.001400580 0.011949674
+##           wt  0.380088737 1.622517536
+##           am -0.614677730 0.926307310</code></pre>
+<p>We get the same intervals as before, but the <code>print</code>
+method for the object returned by <code>confint_adjust</code> provides
+the family-wise confidence level.</p>
+<p>To use a Bonferroni adjustment, we set
+<code>method = &quot;bonferroni&quot;</code> for <code>confint_adjust</code>, as
+shown below.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(ci_b <span class="ot">&lt;-</span> <span class="fu">confint_adjust</span>(fit, <span class="at">method =</span> <span class="st">&quot;bonferroni&quot;</span>))</span></code></pre></div>
+<pre><code>## 
+## Bonferroni-adjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##         term          lwr        upr
+##  (Intercept) -1.305763263 2.78705858
+##         disp -0.004819755 0.01022561
+##           hp -0.003739190 0.01428828
+##           wt  0.162448204 1.84015807
+##           am -0.884617388 1.19624697</code></pre>
+<p>Naturally, these intervals are wider than the unadjusted intervals
+but control the family-wise confidence level at 0.95.</p>
+<p>To construct the Working-Hotelling-adjusted intervals, adjustment, we
+set <code>method = &quot;wh&quot;</code> for <code>confint_adjust</code>, as shown
+below.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confint_adjust</span>(fit, <span class="at">method =</span> <span class="st">&quot;wh&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Working-Hotelling-adjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##         term          lwr        upr
+##  (Intercept) -1.907955577 3.38925089
+##         disp -0.007033435 0.01243929
+##           hp -0.006391640 0.01694073
+##           wt -0.084399576 2.08700585
+##           am -1.190782809 1.50241239</code></pre>
+<p>The Working-Hotelling adjusted intervals are even wider than the
+Bonferroni-adjusted intervals, so the Bonferroni correction is preferred
+here.</p>
+<p>We can easily plot our confidence intervals using <code>plot</code>
+or <code>autoplot</code> (if the <strong>ggplot2</strong> package is
+available. We plot the Bonferroni-adjusted intervals stored in
+<code>ci_b</code> using the code below.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ci_b)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The intervals for <code>hp</code> and <code>disp</code> are difficult
+to see using because of their scale relative to the other intervals, so
+we use the <code>parm</code> function to look at them specifically in
+the code below.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ci_b, <span class="at">parm =</span> <span class="fu">c</span>(<span class="st">&quot;hp&quot;</span>, <span class="st">&quot;disp&quot;</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The intervals are now easier to see. We can use the <code>mar</code>
+argument to reduce the margin along the y-axis (which is modified
+internally by default so that all interval labels are shown).</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ci_b, <span class="at">parm =</span> <span class="fu">c</span>(<span class="st">&quot;hp&quot;</span>, <span class="st">&quot;disp&quot;</span>), <span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">4.1</span>, <span class="fl">4.1</span>, <span class="fl">2.1</span>, <span class="fl">2.1</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Alternatively, we can use the <code>autoplot</code> function, which
+makes these adjustments automatically.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">autoplot</span>(ci_b, <span class="at">parm =</span> <span class="fu">c</span>(<span class="st">&quot;hp&quot;</span>, <span class="st">&quot;disp&quot;</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="confidence-intervals-for-response-mean" class="section level1">
+<h1>Confidence intervals for response mean</h1>
+<p>Interval procedures, whether for the response mean or new
+observations, suffer from the same type of multiple comparisons problems
+that intervals for regression coefficients have.</p>
+<p>The <code>predict_adjust</code> function can be used to create
+adjusted intervals that control the family-wise confidence level for the
+mean response. The function can be used to produce unadjusted intervals
+(<code>method = &quot;none&quot;</code>), Bonferroni-adjusted intervals
+(<code>method = &quot;bonferroni&quot;</code>), and Working-Hotelling-adjusted
+intervals (<code>method = &quot;wh&quot;</code>). The Working-Hotelling intervals
+will tend to be narrower the more intervals considered because the
+Working-Hotelling procedure is valid for ALL linear combinations of the
+regression coefficients and not only the ones being produced. We produce
+unadjusted, Bonferroni-adjusted, and Working-Hotelling-adjusted
+intervals for two combinations of predictors in the code below.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># observations for which to predict the mean response</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>newdata <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">rbind</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, mean),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, median)))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># unadjusted intervals</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;confidence&quot;</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;none&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Unadjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.9 
+## 
+##        fit      lwr      upr
+## 1 5.422724 5.177744 5.667704
+## 2 5.249334 4.838696 5.659972</code></pre>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bonferroni-adjusted intervals</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;confidence&quot;</span>,</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;bonferroni&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Bonferroni-adjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##        fit      lwr      upr
+## 1 5.422724 5.139347 5.706100
+## 2 5.249334 4.774336 5.724332</code></pre>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># working-hotelling-adjusted intervals</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;confidence&quot;</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;wh&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Working-Hotelling-adjusted confidence intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##        fit      lwr      upr
+## 1 5.422724 4.994569 5.850879
+## 2 5.249334 4.531657 5.967011</code></pre>
+</div>
+<div id="prediction-intervals-for-a-new-response" class="section level1">
+<h1>Prediction intervals for a new response</h1>
+<p>The <code>predict_adjust</code> function can be used to create
+adjusted intervals that control the family-wise confidence level for new
+responses. The function can be used to produce unadjusted intervals
+(<code>method = &quot;none&quot;</code>), Bonferroni-adjusted intervals
+(<code>method = &quot;bonferroni&quot;</code>), and Scheffe-adjusted intervals
+(<code>method = &quot;scheffe&quot;</code>).We produce unadjusted,
+Bonferroni-adjusted, and Scheffe-adjusted predictions intervals for four
+combinations of predictors in the code below.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># observations for which to predict the mean response</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>newdata <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">rbind</span>(</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, mean),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, median),</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, quantile, <span class="at">prob =</span> <span class="fl">0.25</span>),</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>               <span class="fu">apply</span>(mtcars, <span class="dv">2</span>, quantile, <span class="at">prob =</span> <span class="fl">0.75</span>)))</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># unadjusted intervals</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;prediction&quot;</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;none&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Unadjusted prediction intervals
+## 
+## Family-wise confidence level of at least 0.8 
+## 
+##        fit      lwr      upr
+## 1 5.422724 4.015419 6.830029
+## 2 5.249334 3.803957 6.694711
+## 3 4.160836 2.658243 5.663429
+## 4 6.341739 4.797332 7.886146</code></pre>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bonferroni-adjusted intervals</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;prediction&quot;</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;bonferroni&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Bonferroni-adjusted prediction intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##        fit      lwr      upr
+## 1 5.422724 3.587138 7.258310
+## 2 5.249334 3.364089 7.134579
+## 3 4.160836 2.200963 6.120709
+## 4 6.341739 4.327326 8.356151</code></pre>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># scheffe-adjusted intervals</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict_adjust</span>(fit, <span class="at">newdata =</span> newdata,</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">interval =</span> <span class="st">&quot;prediction&quot;</span>,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">method =</span> <span class="st">&quot;scheffe&quot;</span>)</span></code></pre></div>
+<pre><code>## 
+## Scheffe-adjusted prediction intervals
+## 
+## Family-wise confidence level of at least 0.95 
+## 
+##        fit      lwr      upr
+## 1 5.422724 3.157140 7.688308
+## 2 5.249334 2.922458 7.576210
+## 3 4.160836 1.741850 6.579822
+## 4 6.341739 3.855437 8.828040</code></pre>
+<p>In this case, the Bonferroni and Scheffe-adjusted intervals produce
+the same results.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

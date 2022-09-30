@@ -1,0 +1,132 @@
+---
+title: "Simultaneous Inference"
+author: "Joshua French"
+date: "2022-09-23"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simultaneous Inference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The **api2lm** package makes it easier to perform simultaneous inference for confidence intervals of regression coefficients and the response mean, as well as the prediction intervals for a new response.
+
+Let's fit a basic basic linear model using the `mtcars` available in the **datasets** package. We consider the model fit in the `confint.lm` function.
+
+```{r}
+fit <- lm(100/mpg ~ disp + hp + wt + am, data = mtcars)
+```
+
+# Confidence for regression coefficients
+
+We construct typical $t$-based confidence intervals using the `confint` function, as shown below. We use the default individual confidence level of 0.95.
+
+```{r}
+confint(fit)
+```
+
+The family-wise confidence level is guaranteed to be at least $1-5(0.05)\geq 0.75$ based on Boole's inequality. We can use the Bonferroni correction or the Working-Hotelling procedure (the latter applies to all linear combinations of the regression coefficients) to control the family-wise confidence level. These adjusted intervals are available using the `confint_adjust` function in the **api2lm** package. By default, the function makes no adjustments, but indicates the lower bound of the family-wise confidence level.
+
+```{r}
+library(api2lm)
+confint_adjust(fit)
+```
+
+We get the same intervals as before, but the `print` method for the object returned by `confint_adjust` provides the family-wise confidence level.
+
+To use a Bonferroni adjustment, we set `method = "bonferroni"` for `confint_adjust`, as shown below.
+
+```{r}
+(ci_b <- confint_adjust(fit, method = "bonferroni"))
+```
+
+Naturally, these intervals are wider than the unadjusted intervals but control the family-wise confidence level at 0.95.
+
+To construct the Working-Hotelling-adjusted intervals, adjustment, we set `method = "wh"` for `confint_adjust`, as shown below.
+
+```{r}
+confint_adjust(fit, method = "wh")
+```
+
+The Working-Hotelling adjusted intervals are even wider than the Bonferroni-adjusted intervals, so the Bonferroni correction is preferred here.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We can easily plot our confidence intervals using `plot` or `autoplot` (if the **ggplot2** package is available. We plot the Bonferroni-adjusted intervals stored in `ci_b` using the code below.
+
+```{r}
+plot(ci_b)
+```
+
+The intervals for `hp` and `disp` are difficult to see using because of their scale relative to the other intervals, so we use the `parm` function to look at them specifically in the code below.
+
+```{r}
+plot(ci_b, parm = c("hp", "disp"))
+```
+
+The intervals are now easier to see. We can use the `mar` argument to reduce the margin along the y-axis (which is modified internally by default so that all interval labels are shown).
+
+```{r}
+plot(ci_b, parm = c("hp", "disp"), mar = c(4.1, 4.1, 2.1, 2.1))
+```
+
+Alternatively, we can use the `autoplot` function, which makes these adjustments automatically.
+
+```{r}
+library(ggplot2)
+autoplot(ci_b, parm = c("hp", "disp"))
+```
+
+# Confidence intervals for response mean
+
+Interval procedures, whether for the response mean or new observations, suffer from the same type of multiple comparisons problems that intervals for regression coefficients have.
+
+The `predict_adjust` function can be used to create adjusted intervals that control the family-wise confidence level for the mean response. The function can be used to produce unadjusted intervals (`method = "none"`), Bonferroni-adjusted intervals (`method = "bonferroni"`), and Working-Hotelling-adjusted intervals (`method = "wh"`). The Working-Hotelling intervals will tend to be narrower the more intervals considered because the Working-Hotelling procedure is valid for ALL linear combinations of the regression coefficients and not only the ones being produced. We produce unadjusted, Bonferroni-adjusted, and Working-Hotelling-adjusted intervals for two combinations of predictors in the code below.
+
+```{r}
+# observations for which to predict the mean response
+newdata <- as.data.frame(rbind(
+               apply(mtcars, 2, mean),
+               apply(mtcars, 2, median)))
+# unadjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "confidence",
+               method = "none")
+# bonferroni-adjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "confidence",
+               method = "bonferroni")
+# working-hotelling-adjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "confidence",
+               method = "wh")
+```
+
+# Prediction intervals for a new response
+
+The `predict_adjust` function can be used to create adjusted intervals that control the family-wise confidence level for new responses. The function can be used to produce unadjusted intervals (`method = "none"`), Bonferroni-adjusted intervals (`method = "bonferroni"`), and Scheffe-adjusted intervals (`method = "scheffe"`).We produce unadjusted, Bonferroni-adjusted, and Scheffe-adjusted predictions intervals for four combinations of predictors in the code below.
+
+```{r}
+# observations for which to predict the mean response
+newdata <- as.data.frame(rbind(
+               apply(mtcars, 2, mean),
+               apply(mtcars, 2, median),
+               apply(mtcars, 2, quantile, prob = 0.25),
+               apply(mtcars, 2, quantile, prob = 0.75)))
+# unadjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "prediction",
+               method = "none")
+# bonferroni-adjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "prediction",
+               method = "bonferroni")
+# scheffe-adjusted intervals
+predict_adjust(fit, newdata = newdata,
+               interval = "prediction",
+               method = "scheffe")
+```
+
+In this case, the Bonferroni and Scheffe-adjusted intervals produce the same results.
