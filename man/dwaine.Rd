@@ -33,7 +33,9 @@ Data from the Dwaine Studios data in Applied
   Studios is now operating are included in the data set.
 }
 \references{
-Kutner, M. H., Nachtsheim, C. J., Neter, J., & Li, W. (2004). Applied Linear Statistical Models, 5th edition. New York: McGraw-Hill/Irwin.
+Kutner, M. H., Nachtsheim, C. J., Neter, J.,
+& Li, W. (2004). Applied Linear Statistical Models, 5th
+edition. New York: McGraw-Hill/Irwin.
 }
 \author{
 Joshua P. French

@@ -8,5 +8,4 @@
 
 library(testthat)
 library(api2lm)
-
 test_check("api2lm")

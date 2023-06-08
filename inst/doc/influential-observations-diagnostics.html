@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Joshua French" />
+
+<meta name="date" content="2022-09-23" />
+
+<title>Influential Observations Diagnostics</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Influential Observations Diagnostics</h1>
+<h4 class="author">Joshua French</h4>
+<h4 class="date">2022-09-23</h4>
+
+
+
+<p>An <strong>influential observation</strong> dramatically changes the
+fitted model based on whether it is included or excluded from the
+analysis.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(api2lm)</span></code></pre></div>
+<p>Influential observations are often extreme with respect to their
+response values or their associated predictors.</p>
+<ul>
+<li>An <strong>outlier</strong> is an observation with a large residual.
+<ul>
+<li>The response is relatively far from its fitted value.</li>
+</ul></li>
+<li>A <strong>leverage point</strong> is an observation whose predictor
+values are extreme relative to most other observations.</li>
+</ul>
+<div id="home_sales-data" class="section level1">
+<h1><code>home_sales</code> data</h1>
+<p>To facilitate our discussion we will use the <code>home_sales</code>
+data set in the <strong>api2lm</strong> package, which contains
+information about homes sold in King County, WA between May 2014 and May
+2015. The data set is a data frame with 216 rows and 8 columns:</p>
+<ul>
+<li><code>price</code>: sale price (log10 units).</li>
+<li><code>bedrooms</code>: number of bedrooms.</li>
+<li><code>bathrooms</code>: number of bathrooms.</li>
+<li><code>sqft_living</code>: size of living space.</li>
+<li><code>sqft_lot</code>: size of property.</li>
+<li><code>floors</code>: number of floors.</li>
+<li><code>waterfront</code>: a factor variable with levels
+<code>&quot;yes&quot;</code> and <code>&quot;no&quot;</code> that indicate whether a home as
+a waterfront view.</li>
+<li><code>condition</code>: a factor variable indicating the condition
+of a house with levels ranging from <code>&quot;poor&quot;</code> to
+<code>&quot;very good&quot;</code>.</li>
+</ul>
+<p>We load the data below.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(home_sales, <span class="at">package =</span> <span class="st">&quot;api2lm&quot;</span>)</span></code></pre></div>
+<p>The validity of the assumptions we want to check depend on the model
+fit to the data.</p>
+<p>We will regress the <code>price</code> variable on all of the
+remaining variables in <code>home_sales</code>.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>lmod <span class="ot">&lt;-</span> <span class="fu">lm</span>(price <span class="sc">~</span> ., <span class="at">data =</span> home_sales)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">coef</span>(lmod)</span></code></pre></div>
+<pre><code>##        (Intercept)           bedrooms          bathrooms        sqft_living 
+##       5.377543e+00       2.604201e-03       3.149792e-02       9.987617e-05 
+##           sqft_lot             floors      waterfrontyes      conditionfair 
+##      -8.773790e-07       8.630242e-02       3.152404e-01      -3.128967e-01 
+##   conditionaverage      conditiongood conditionvery_good 
+##      -1.278938e-01      -9.122793e-02      -2.185523e-02</code></pre>
+</div>
+<div id="outliers" class="section level1">
+<h1>Outliers</h1>
+<p>We describe two common approaches for identifying outliers.</p>
+<p>The simplest approach for identifying outliers is to use an index
+plot of the studentized residuals to determine the observations with
+extreme residuals.</p>
+<ul>
+<li>An index plot is a plot of a set of statistics versus their
+observation number.</li>
+<li>We will create a scatter plot of the pairs <span class="math inline">\((i, t_i)\)</span> for <span class="math inline">\(i=1,2,\ldots,n\)</span>.</li>
+</ul>
+<p>The other approach is to compare the set of studentized residuals to
+the appropriate quantile of a <span class="math inline">\(t_{n-p-1}\)</span> distribution.</p>
+<p>To evaluate whether a <em>single</em> observation is an outlier, we
+compare its studentized residual to <span class="math inline">\(t^{\alpha/2}_{n-p-1}\)</span>, i.e., the <span class="math inline">\(1-\alpha/2\)</span> quantile of a <span class="math inline">\(t\)</span> distribution with <span class="math inline">\(n-p-1\)</span> degrees of freedom.</p>
+<ul>
+<li>If <span class="math inline">\(|t_i| &gt;
+t^{\alpha/2}_{n-p-1}\)</span>, then observation <span class="math inline">\(i\)</span> is an outlier.</li>
+<li>We won’t do this because we have more than one observation to
+evaluate.</li>
+</ul>
+<p>To identify the outliers from the <span class="math inline">\(n\)</span> observations of our fitted model, we
+should adjust the previous idea using the Bonferroni correction to
+address the multiple comparisons problem.</p>
+<ul>
+<li>We conclude observation <span class="math inline">\(i\)</span> is an
+outlier if <span class="math inline">\(|t_i| &gt;
+t^{\alpha/2n}_{n-p-1}\)</span>.</li>
+</ul>
+<p><strong>Outlier example</strong></p>
+<hr />
+<p>The <code>outlier_plot</code> function is a convenient way to create
+an index plot of the studentized residuals from a fitted model.</p>
+<p><code>outlier_plot</code> has four main arguments that we need to
+know about:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>id_n</code>: the number of points to identify with
+labels.</li>
+<li><code>add_reference</code>: a logical value indicating whether the
+Bonferroni-corrected <span class="math inline">\(t\)</span> quantiles
+(<span class="math inline">\(t^{1-\alpha/2n}_{n-p-1}\)</span> and <span class="math inline">\(t^{\alpha/2n}_{n-p-1}\)</span>) are added as
+reference lines to the plot. The default is <code>TRUE</code>.</li>
+<li><code>alpha</code>: the <span class="math inline">\(\alpha\)</span>
+value used for the <span class="math inline">\(t\)</span> quantiles. The
+default is <code>0.05</code>.</li>
+</ul>
+<p>We use the <code>outlier_plot</code> function to identify the 2 most
+extreme outliers for our fitted model. Observations 214 and 33 have the
+most extreme studentized residuals and observation 214 is more extreme
+than the Bonferroni-adjusted <span class="math inline">\(t\)</span>
+quantile.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">outlier_plot</span>(lmod, <span class="at">id_n =</span> <span class="dv">2</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>The <code>outlier_test</code> function can be used to identify the
+observations with studentized residuals more extreme than the
+appropriate Bonferroni-corrected <span class="math inline">\(t\)</span>
+quantiles. The main arguments to the <code>outlier_test</code> function
+are:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>n</code>: the number of outliers to return (by default, all of
+them).</li>
+<li><code>alpha</code>: the desired familywise error rate for the family
+of <span class="math inline">\(n\)</span> tests. The default is
+<code>alpha = 0.05</code>.</li>
+</ul>
+<p>Running <code>outlier_test</code> on a fitted model will return the
+identified outliers and their Bonferroni-adjusted p-values
+(<code>adj_pvalue</code>). If the adjusted p-value is less than
+<code>alpha</code>, then the observation is declared an outlier.</p>
+<p>We use <code>outlier_test</code> to see that observation 214 is an
+outlier according to this test.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">outlier_test</span>(lmod)</span></code></pre></div>
+<pre><code>##          stat       pvalue adj_pvalue
+## 214 -3.948387 5.414913e-05 0.01169621</code></pre>
+</div>
+<div id="leverage-points" class="section level1">
+<h1>Leverage Points</h1>
+<p>The <strong>leverage values</strong> are the diagonal elements of the
+hat matrix <span class="math inline">\(\mathbf{H}=\mathbf{X}(\mathbf{X}^T
+\mathbf{X})^{-1} \mathbf{X}^T\)</span>. The <span class="math inline">\(i\)</span>th leverage value is given by <span class="math inline">\(h_i=\mathbf{H}_{i,i}\)</span>, the <span class="math inline">\(i\)</span>th diagonal position of the hat
+matrix.</p>
+<p>We can extract the leverage values of a fitted model using the
+<code>hatvalues</code> function.</p>
+<p>An observation is declared to be a leverage point if its leverage
+value is unusually large.</p>
+<p>Kutner et al. (2005) suggest two different thresholds for identifying
+a leverage point.</p>
+<ul>
+<li>Observation <span class="math inline">\(i\)</span> is declared to be
+an outlier if <span class="math inline">\(h_i &gt; 2p/n\)</span>.
+<ul>
+<li>This approach can be overly sensitive.</li>
+</ul></li>
+<li>Observation <span class="math inline">\(i\)</span> is declared to be
+an outlier if <span class="math inline">\(h_i &gt; 0.5\)</span>.</li>
+</ul>
+<p><strong>Leverage example</strong></p>
+<hr />
+<p>We can create an index plot of the leverage values of a fitted model
+using the <code>leverage_plot</code> function.</p>
+<p>The <code>leverage_plot</code> function takes a few main
+arguments:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>id_n</code>: the number of points to identify with
+labels.</li>
+<li><code>ttype</code>: the threshold type. The default is
+<code>&quot;half&quot;</code>, which uses a reference threshold of
+<code>0.5</code>. Alternatively, we can choose <code>&quot;2mean&quot;</code>,
+which uses a reference threshold of <span class="math inline">\(2p/n\)</span>.</li>
+</ul>
+<p>We use the <code>leverage_plot</code> function to identify leverage
+points for the model fit to the <code>home_sales</code> data.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">leverage_plot</span>(lmod)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Observations 33 and 179 are leverage points with leverage values
+greater than 0.5. Observation 214 has a leverage value nearly at 0.5, so
+we should consider it a leverage point.</p>
+</div>
+<div id="influential-observations" class="section level1">
+<h1>Influential Observations</h1>
+<p>An <strong>influential observation</strong> dramatically changes the
+fitted model based on whether it is included or excluded from the
+analysis.</p>
+<p>We will now discuss several other measures of influence.</p>
+<div id="dfbeta-and-dfbetas" class="section level2">
+<h2>DFBETA and DFBETAS</h2>
+<p>The <strong>DFBETA</strong> measure of influence is an <span class="math inline">\(n\times p\)</span> matrix of statistics that
+measures the change in the estimated regression coefficients when we fit
+the model using all <span class="math inline">\(n\)</span> observations
+versus when we fit the model leaving one observation out at a time.</p>
+<p>The <span class="math inline">\(i\)</span>th row of DFBETA is</p>
+<p><span class="math display">\[
+\text{DFBETA}_i = \hat{\boldsymbol{\beta}} -
+\hat{\boldsymbol{\beta}}_{(i)}.
+\]</span></p>
+<ul>
+<li><span class="math inline">\(\hat{\boldsymbol{\beta}} =
+[\hat{\beta}_0, \hat{\beta}_1, \ldots, \hat{\beta}_{p-1}]\)</span> is
+the vector of estimated regression coefficients when using all <span class="math inline">\(n\)</span> observations.</li>
+<li><span class="math inline">\(\hat{\boldsymbol{\beta}}_{(i)} =
+[\hat{\beta}_{0(i)}, \hat{\beta}_{1(i)}, \ldots,
+\hat{\beta}_{p-1(i)}]\)</span> is the vector of estimated regression
+coefficients obtained from the model fit using all <span class="math inline">\(n\)</span> observations except the <span class="math inline">\(i\)</span>th observation.</li>
+<li><span class="math inline">\(\text{DFBETA}_{ij} = \hat{\beta}_j -
+\hat{\beta}_{j(i)}\)</span>.</li>
+</ul>
+<p>Identifying influential observations using the DFBETA matrix can be
+difficult because the sampling variance associated with each coefficient
+can be very different.</p>
+<p>The <strong>DFBETAS</strong> matrix is a transformation of the DFBETA
+matrix that has been scaled so that the individual statistics have
+similar sampling variability.</p>
+<p>DFBETAS is also an <span class="math inline">\(n\times p\)</span>
+matrix of statistics with the <span class="math inline">\(j\)</span>th
+element of the <span class="math inline">\(i\)</span>th row being
+defined as</p>
+<p><span class="math display">\[\text{DFBETAS}_{i,j} =
+\frac{\hat{\beta}_{j-1} -
+\hat{\beta}_{j-1(i)}}{\hat{\mathrm{se}}(\hat{\beta}_{j-1})},\quad
+i=1,2,\ldots,n, \quad j=0,1,\ldots,p-1.\]</span></p>
+<p>A DFBETAS statistic less than -1 or greater than 1 is often used as
+an indicator that the associated observation is influential in
+determining the fitted model.</p>
+<p>One way of identifying influential observations is to create index
+plots the DFBETA or DFBETAs values for each regression coefficient and
+determine the estimates that substantially change when observation <span class="math inline">\(i\)</span> is excluded from analysis.</p>
+<ul>
+<li>We recommend using index plots of the DFFBETAS values instead of the
+DFBETA values because the plots will have more similar scales and are
+easier to work with.</li>
+</ul>
+<p>The DFBETA and DFBETAS matrices can be obtained by using the
+<code>dfbeta</code> and <code>dfbetas</code> functions,
+respectively.</p>
+<p><strong>DFBETAS example</strong></p>
+<hr />
+<p>We can use the <code>dfbetas_plot</code> function to get index plots
+of the DFBETAS statistics for each regression coefficient.</p>
+<p>Some of the main arguments to the <code>dfbetas_plot</code> function
+are:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>id_n</code>: the number of observations for which to print an
+associated label.</li>
+<li><code>regressors</code>: a formula indicating the regressors for
+which we want to plot the DFBETAS statistics. By default, index plots
+are created for all regressors.</li>
+</ul>
+<p>Reference lines are automatically added at <span class="math inline">\(\pm 1\)</span> to indicate observations whose
+DFBETAS values are particularly extreme.</p>
+<p>We plot the <code>bedrooms</code>, <code>bathrooms</code>,
+<code>sqft_living</code>, and <code>sqft_lot</code> variables for the
+fitted model of our <code>home_sales</code> data and label the two most
+extreme observations.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dfbetas_plot</span>(lmod, <span class="at">id_n =</span> <span class="dv">2</span>,</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>             <span class="at">regressors =</span> <span class="sc">~</span> bedrooms <span class="sc">+</span> bathrooms <span class="sc">+</span> sqft_living <span class="sc">+</span> sqft_lot)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>We can see from these plots that:</p>
+<ul>
+<li>The estimated coefficient for <code>bedrooms</code> changes by more
+than 3 standard errors based on whether observation 179 is used in
+fitting the model.</li>
+<li>The estimated coefficients for <code>sqft_living</code> and
+<code>sqft_lot</code> change by more than 1 standard error based on
+whether observations 33 or 214 are used in fitting the model.</li>
+</ul>
+</div>
+<div id="dffits" class="section level2">
+<h2>DFFITS</h2>
+<p>Welsch and Kuh (1977) proposed measuring an observation’s influence
+through the DFFITS statistic, which is the difference between its fitted
+value and its LOO predicted response value.</p>
+<p>The <strong>DFFITS</strong> statistic for observations <span class="math inline">\(i\)</span> defined as</p>
+<p><span class="math display">\[\text{DFFITS}_i = \hat{Y}_i -
+\hat{Y}_{i(i)}.\]</span></p>
+<ul>
+<li>A large difference between a fitted value and its associated LOO
+predicted value provides evidence an observation is influential.</li>
+</ul>
+<p>Belsley et al. (2005) suggest that observation <span class="math inline">\(i\)</span> is influential if <span class="math inline">\(|\text{DFFITS}_i|&gt;2\sqrt{p/n}\)</span>.</p>
+<p>An index plot of the DFFITS statistics for all observations will
+indicate the observations most influential in changing their associated
+predicted value.</p>
+<p>The DFFITS statistics for each observation can be obtained using the
+<code>dffits</code> function.</p>
+<p><strong>DFFITS example</strong></p>
+<hr />
+<p>We can create an index plot of our DFFITS statistics using the
+<code>dffits_plot</code> function.</p>
+<p>Some of the main arguments to the <code>dffits_plot</code> function
+are:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>id_n</code>: the number of observations for which to print an
+associated label.</li>
+</ul>
+<p>Horizontal reference lines are automatically added at <span class="math inline">\(\pm 2\sqrt{p/n}\)</span> to identify influential
+observations.</p>
+<p>We create an index plot of the DFFITS statistics below. We identify
+the observations with the 3 most extreme DFFITS statistics.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dffits_plot</span>(lmod, <span class="at">id_n =</span> <span class="dv">3</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>We see that observations 33, 179, and 214 all have particularly
+extreme DFFITS statistics. Several other observations have statistics
+more extreme than <span class="math inline">\(\pm 1\)</span> (run
+<code>dffits_test(lmod)</code> for a complete list).</p>
+</div>
+<div id="cooks-distance" class="section level2">
+<h2>Cook’s Distance</h2>
+<p>Cook (1977) proposed the <strong>Cook’s distance</strong> to
+summarize the potential influence of an observation with a single
+statistic.</p>
+<p>The Cook’s distance for the <span class="math inline">\(i\)</span>th
+observation is</p>
+<p><span class="math display">\[D_i=\frac{\sum_{k=1}^n (Y_k -
+\hat{Y}_{k(i)})^2}{p \widehat{\sigma}^2} = \frac{1}{p} r_i^2
+\frac{h_i}{1-h_i}.\]</span></p>
+<ul>
+<li><span class="math inline">\(\hat{Y}_{k(i)}\)</span> is the predicted
+response for observation <span class="math inline">\(k\)</span> when
+observation <span class="math inline">\(i\)</span> is not included in
+the analysis (this is a type of LOO prediction).</li>
+<li>The <strong>standardized residual</strong> for observation <span class="math inline">\(i\)</span> is</li>
+</ul>
+<p><span class="math display">\[
+r_i = \frac{\hat{\epsilon}_i}{\widehat{\sigma}\sqrt{1-h_i}}.
+\]</span></p>
+<p>An index plot of the Cook’s distances can be used to identify
+observations with unusually large Cook’s distances.</p>
+<ul>
+<li>Cook’s distance values can be obtained using the
+<code>cooks.distance</code> function.</li>
+<li>Kutner et al. (2015) suggest declaring an observation to be
+influential if its Cook’s distance is more than <span class="math inline">\(F^{0.5}_{p, n-p}\)</span>, i.e., the 0.5 quantile
+of an <span class="math inline">\(F\)</span> distribution with <span class="math inline">\(p\)</span> numerator degrees of freedom and <span class="math inline">\(n-p\)</span> denominator degrees of freedom.</li>
+</ul>
+<p><strong>Cook’s distance example</strong></p>
+<hr />
+<p>An index plot of the Cook’s distances can be created using the
+<code>cooks_plot</code> function.</p>
+<p>Some of the main arguments to the <code>cooks_plot</code> function
+are:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>id_n</code>: the number of observations for which to print an
+associated label.</li>
+</ul>
+<p>A horizontal reference line is automatically added at <span class="math inline">\(F^{0.5}_{p,n-p}\)</span> to identify influential
+observations.</p>
+<p>We create an index plot of the Cook’s distances below. We identify
+the observations with the 3 most extreme Cook’s distances.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cooks_plot</span>(lmod, <span class="at">id_n =</span> <span class="dv">3</span>)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>We see that observations 33, 179, and 214 all have particularly
+extreme Cook’s distances, indicating those observations are influential
+in some sense. This is consistent with our previous results.</p>
+</div>
+<div id="influence-plots" class="section level2">
+<h2>Influence plots</h2>
+<p>An <strong>influence plot</strong> is a scatter plot of the
+studentized or standardized residuals versus the leverage values. The
+size of each point in the plot is proportional to either its Cook’s
+distance or DFFITS statistic.</p>
+<p>In general, observations that are extreme with respect to their
+residuals, leverage values, or Cook’s distance/DFFITS statistics are
+more likely be be potentially influential.</p>
+<p><strong>Influence plot example</strong></p>
+<hr />
+<p>An influence plot can be created using the
+<code>influence_plot</code> function from the <strong>api2lm</strong>
+package.</p>
+<p>Some of the main arguments to the <code>influence_plot</code>
+function are:</p>
+<ul>
+<li><code>model</code>: the fitted model.</li>
+<li><code>rtype</code>: the type of residual to plot on the y-axis. The
+default is the studentized residuals.</li>
+<li><code>criterion</code>: the criterion that controls the size of the
+points. The default is the Cook’s distance.</li>
+<li><code>id_n</code>: the number of observations for which to print an
+associated label. The most extreme observations with respect to the
+criterion are labeled.</li>
+</ul>
+<p>We create in influence plot for the model fit to the
+<code>home_sales</code> data below.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">influence_plot</span>(lmod)</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+</div>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p>Belsley, D. A., Kuh, E., &amp; Welsch, R. E. (2005). Regression
+diagnostics: Identifying influential data and sources of collinearity.
+John Wiley &amp; Sons.</p>
+<p>Cook, R. D. (1977). Detection of Influential Observation in Linear
+Regression. Technometrics, 19(1), 15–18. <a href="https://doi.org/10.2307/1268249" class="uri">https://doi.org/10.2307/1268249</a></p>
+<p>Kutner, Michael H, Christopher J Nachtsheim, John Neter, and William
+Li. 2005. Applied Linear Statistical Models, 5th Edition.
+McGraw-Hill/Irwin, New York.</p>
+<p>Welsch, R. E., &amp; Kuh, E. (1977). Linear regression diagnostics
+(No. w0173). National Bureau of Economic Research.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

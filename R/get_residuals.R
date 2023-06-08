@@ -1,0 +1,109 @@
+#' Extract residuals from a model
+#'
+#' Extracts different types of residuals from a fitted model.
+#' The types of residuals are discussed in Details.
+#'
+#' For observations \eqn{1, 2, \ldots, n}, let:
+#' \enumerate{
+#' \item \eqn{Y_i} denote the response value for the \eqn{i}th observation.
+#' \item \eqn{\hat{Y}_i} denote the fitted value for the
+#' \eqn{i}th observation.
+#' \item \eqn{h_i} denote the leverage value for the \eqn{i}th observation.
+#' }
+#' We assume that \eqn{\mathrm{sd}(Y_i) = \sigma} for
+#' \eqn{i \in \{1, 2, \ldots, n\}} and that \eqn{\hat{\sigma}}
+#' is the estimate produced by \code{sigma(x)}, where \code{x}
+#' is the fitted model object.
+#'
+#' The ordinary residual for the \eqn{i}th
+#' observation is computed as
+#'
+#' \deqn{\hat{\epsilon}_i = Y_i - \hat{Y}_i.}
+#'
+#' The variance of the \code{i}th ordinary residual under standard
+#' assumptions is \eqn{\sigma^2(1-h_i)}.
+#'
+#' The standardized residual for the \eqn{i}th observation
+#' is computed as
+#'
+#' \deqn{r_i = \frac{\hat{\epsilon}_i}{\hat{\sigma}\sqrt{1-h_i}}.}
+#'
+#' The standardized residual is also known as the internally
+#' studentized residual.
+#'
+#' Let \eqn{\hat{Y}_{i(i)}} denote the predicted value of
+#' \eqn{Y_i} for the model fit with all \eqn{n} observations
+#' except observation \eqn{i}. The leave-one-out (LOO) residual for observation \eqn{i} is
+#' computed as
+#'
+#' \deqn{l_i = Y_i - \hat{Y}_{i(i)} = \frac{\hat{\epsilon}_i}{1-h_i}.}
+#'
+#' The LOO residual is also known as the deleted or jackknife
+#' residual.
+#'
+#' The studentized residual for the \eqn{i}th observation
+#' is computed as
+#'
+#' \deqn{t_i = \frac{l_i}{\hat{\sigma}_{(i)}\sqrt{1-h_i}},}
+#'
+#' where \eqn{\hat{\sigma}_{(i)}} is the leave-one-out estimate
+#' of \eqn{\sigma}.
+#'
+#' The studentized residual is also known as the externally
+#' studentized residual.
+#'
+
+#'
+#' @param x An \code{lm} object
+#' @param rtype The desired residual type. The options are
+#'   \code{"ordinary"}, \code{"standardized"}, \code{"studentized"},
+#'   \code{"jackknife"}, \code{"loo"}, \code{"deleted"}, \code{"internally
+#'   studentized"}, and \code{"externally studentized"}.
+#'
+#' @return A vector of residals.
+#' @export
+#'
+#' @examples
+#' lmod <- lm(Girth ~ Height, data = trees)
+#' # ordinary residuals
+#' rord <- get_residuals(lmod)
+#' all.equal(rord, residuals(lmod))
+#' # standardized residuals
+#' rstand <- get_residuals(lmod, "standardized")
+#' all.equal(rstand, rstandard(lmod))
+#' # studentized residuals
+#' rstud <- get_residuals(lmod, "studentized")
+#' all.equal(rstud, rstudent(lmod))
+#' # loo residuals
+#' rl <- get_residuals(lmod, "loo")
+#' all.equal(rl, rloo(lmod))
+get_residuals <- function(x,
+                          rtype = c(
+                            "ordinary",
+                            "standardized",
+                            "studentized",
+                            "jackknife",
+                            "loo",
+                            "deleted",
+                            "internally studentized",
+                            "externally studentized"
+                          )) {
+  if (!is.element("lm", class(x))) {
+    stop("x must be of class lm")
+  }
+  rtype <- match.arg(rtype,
+                     c("ordinary", "standardized",
+                       "studentized", "jackknife",
+                       "loo", "deleted",
+                       "internally studentized",
+                       "externally studentized"))
+  switch(rtype,
+         ordinary = stats::residuals(x),
+         standardized = stats::rstandard(x),
+         studentized = stats::rstudent(x),
+         loo = rloo(x),
+         jackknife = rloo(x),
+         deleted = rloo(x),
+         internally_studentized = stats::rstandard(x),
+         externally_studentized = stats::rstudent(x))
+}

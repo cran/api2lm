@@ -24,7 +24,8 @@
 #'  \item{\code{dpi}}{Per capita disposable personal income in thousands of dollars.}
 #'  \item{\code{sales}}{Sales in thousands of dollars}
 #' }
-#' @references
-#' Kutner, M. H., Nachtsheim, C. J., Neter, J., & Li, W. (2004). Applied Linear Statistical Models, 5th edition. New York: McGraw-Hill/Irwin.
+#' @references Kutner, M. H., Nachtsheim, C. J., Neter, J.,
+#' & Li, W. (2004). Applied Linear Statistical Models, 5th
+#' edition. New York: McGraw-Hill/Irwin.
 #' @keywords data
 NULL
